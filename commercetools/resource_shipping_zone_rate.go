@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/labd/commercetools-go-sdk/commercetools"
 )
 
@@ -72,6 +73,57 @@ func resourceShippingZoneRate() *schema.Resource {
 					},
 				},
 			},
+			"shipping_rate_price_tiers": {
+				Type:     schema.TypeList,
+				MinItems: 1,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(commercetools.ShippingRateTierTypeCartValue),
+								string(commercetools.ShippingRateTierTypeCartScore),
+								string(commercetools.ShippingRateTierTypeCartClassification),
+							}, false),
+						},
+						// TODO: Do we want to validate below based on value in "type"?
+						"minimum_cent_amount": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"score": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"price": {
+							Type:     schema.TypeList,
+							Required: true,
+							MinItems: 1,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"currency_code": {
+										Type:         schema.TypeString,
+										Required:     true,
+										ForceNew:     true,
+										ValidateFunc: ValidateCurrencyCode,
+									},
+									"cent_amount": {
+										Type:     schema.TypeInt,
+										Required: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -121,6 +173,7 @@ func resourceShippingZoneRateCreate(d *schema.ResourceData, m interface{}) error
 		Actions: []commercetools.ShippingMethodUpdateAction{},
 	}
 	price := d.Get("price").([]interface{})[0].(map[string]interface{})
+
 	var freeAbove *commercetools.Money
 	if freeAboveState, ok := d.GetOk("free_above"); ok {
 		log.Printf("[DEBUG] Free above state: %s", stringFormatObject(freeAboveState))
@@ -131,6 +184,15 @@ func resourceShippingZoneRateCreate(d *schema.ResourceData, m interface{}) error
 		}
 	}
 	log.Printf("[DEBUG] Setting freeAbove: %s", stringFormatObject(freeAbove))
+
+	var shippingRatePriceTiers []commercetools.ShippingRatePriceTier
+	if shippingRatePriceTierState, ok := d.GetOk("shipping_rate_price_tiers"); ok {
+		shippingRatePriceTiers, err = createShippingRatePriceTiers(shippingRatePriceTierState.([]interface{}))
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("[DEBUG] Setting shippingRatePriceTiers: %s", stringFormatObject(shippingRatePriceTiers))
 
 	priceCurrencyCode := commercetools.CurrencyCode(price["currency_code"].(string))
 
@@ -156,6 +218,7 @@ func resourceShippingZoneRateCreate(d *schema.ResourceData, m interface{}) error
 				CentAmount:   price["cent_amount"].(int),
 			},
 			FreeAbove: freeAbove,
+			Tiers:     shippingRatePriceTiers,
 		},
 	})
 
@@ -180,6 +243,43 @@ func resourceShippingZoneRateCreate(d *schema.ResourceData, m interface{}) error
 	d.SetId(buildShippingZoneRateID(shippingMethod.ID, shippingZoneID, string(priceCurrencyCode)))
 
 	return resourceShippingZoneRateRead(d, m)
+}
+
+func createShippingRatePriceTiers(tierStateMap []interface{}) ([]commercetools.ShippingRatePriceTier, error) {
+	var tiers []commercetools.ShippingRatePriceTier
+	for tierState := range tierStateMap {
+		tierMap := tierStateMap[tierState].(map[string]interface{})
+
+		var price *commercetools.Money
+		priceMap := tierMap["price"].([]interface{})[0].(map[string]interface{})
+		price = &commercetools.Money{
+			CurrencyCode: commercetools.CurrencyCode(priceMap["currency_code"].(string)),
+			CentAmount:   priceMap["cent_amount"].(int),
+		}
+
+		tierType := tierMap["type"].(string)
+		switch tierType {
+		case string(commercetools.ShippingRateTierTypeCartValue):
+			tiers = append(tiers, commercetools.CartValueTier{
+				MinimumCentAmount: tierMap["minimum_cent_amount"].(int),
+				Price:             price,
+			})
+		case string(commercetools.ShippingRateTierTypeCartClassification):
+			tiers = append(tiers, commercetools.CartClassificationTier{
+				Value: tierMap["value"].(string),
+				Price: price,
+			})
+		case string(commercetools.ShippingRateTierTypeCartScore):
+			tiers = append(tiers, commercetools.CartScoreTier{
+				Score: tierMap["score"].(float64),
+				Price: price,
+			})
+			// Do we want to fail on 1 wrong tier?
+		default:
+			return nil, fmt.Errorf("invalid shippingRatePriceTier type: %s", tierType)
+		}
+	}
+	return tiers, nil
 }
 
 func buildShippingZoneRateID(shippingMethodID string, shippingZoneID string, currencyCode string) string {
@@ -244,7 +344,7 @@ func resourceShippingZoneRateUpdate(d *schema.ResourceData, m interface{}) error
 		Actions: []commercetools.ShippingMethodUpdateAction{},
 	}
 
-	if d.HasChange("price") || d.HasChange("free_above") {
+	if d.HasChange("price") || d.HasChange("free_above") || d.HasChange("shipping_rate_price_tiers") {
 		zoneResourceIdentifier := commercetools.ZoneResourceIdentifier{
 			ID: shippingZoneID,
 		}
@@ -258,6 +358,10 @@ func resourceShippingZoneRateUpdate(d *schema.ResourceData, m interface{}) error
 				CentAmount:   oldFreeAbove.CentAmount,
 			}
 		}
+		var oldShippingRatePriceTiers []commercetools.ShippingRatePriceTier
+		if shippingRate.Tiers != nil {
+			oldShippingRatePriceTiers = shippingRate.Tiers
+		}
 
 		oldShippingRateDraft := commercetools.ShippingRateDraft{
 			Price: &commercetools.Money{
@@ -265,6 +369,7 @@ func resourceShippingZoneRateUpdate(d *schema.ResourceData, m interface{}) error
 				CentAmount:   oldTypedPrice.CentAmount,
 			},
 			FreeAbove: oldFreeAboveMoney,
+			Tiers:     oldShippingRatePriceTiers,
 		}
 
 		price := d.Get("price").([]interface{})[0].(map[string]interface{})
@@ -277,12 +382,21 @@ func resourceShippingZoneRateUpdate(d *schema.ResourceData, m interface{}) error
 			}
 		}
 
+		var newShippingRatePriceTiers []commercetools.ShippingRatePriceTier
+		if shippingRatePriceTiers, ok := d.GetOk("shipping_rate_price_tiers"); ok {
+			newShippingRatePriceTiers, err = createShippingRatePriceTiers(shippingRatePriceTiers.([]interface{}))
+			if err != nil {
+				return err
+			}
+		}
+
 		newShippingRateDraft := commercetools.ShippingRateDraft{
 			Price: &commercetools.Money{
 				CurrencyCode: commercetools.CurrencyCode(currencyCode),
 				CentAmount:   price["cent_amount"].(int),
 			},
 			FreeAbove: newFreeAboveMoney,
+			Tiers:     newShippingRatePriceTiers,
 		}
 
 		input.Actions = append(
@@ -342,6 +456,15 @@ func resourceShippingZoneRateDelete(d *schema.ResourceData, m interface{}) error
 			CentAmount:   freeAboveMap["cent_amount"].(int),
 		}
 	}
+
+	var newShippingRatePriceTiers []commercetools.ShippingRatePriceTier
+	if shippingRatePriceTiers, ok := d.GetOk("shipping_rate_price_tiers"); ok {
+		newShippingRatePriceTiers, err = createShippingRatePriceTiers(shippingRatePriceTiers.([]interface{}))
+		if err != nil {
+			return err
+		}
+	}
+
 	shippingZoneID := d.Get("shipping_zone_id").(string)
 	removeAction := commercetools.ShippingMethodRemoveShippingRateAction{
 		Zone: &commercetools.ZoneResourceIdentifier{ID: shippingZoneID},
@@ -351,6 +474,7 @@ func resourceShippingZoneRateDelete(d *schema.ResourceData, m interface{}) error
 				CentAmount:   price["cent_amount"].(int),
 			},
 			FreeAbove: newFreeAboveMoney,
+			Tiers:     newShippingRatePriceTiers,
 		},
 	}
 
