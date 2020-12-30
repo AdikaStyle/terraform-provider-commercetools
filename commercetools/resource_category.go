@@ -23,10 +23,12 @@ func resourceCategory() *schema.Resource {
 			"key": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"name": {
 				Type:     schema.TypeMap,
 				Required: true,
+				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeMap,
@@ -58,6 +60,7 @@ func resourceCategory() *schema.Resource {
 				Optional: true,
 			},
 			//custom
+			//assets
 			"version": {
 				Type:     schema.TypeInt,
 				Computed: true,
