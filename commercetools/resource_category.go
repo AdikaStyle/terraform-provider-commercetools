@@ -37,26 +37,26 @@ func resourceCategory() *schema.Resource {
 				Required: true,
 			},
 			//parent
-			//"orderHint": {
-			//	Type:     schema.TypeString,
-			//	Optional: true,
-			//},
-			//"externalId": {
-			//	Type:     schema.TypeString,
-			//	Optional: true,
-			//},
-			//"metaTitle": {
-			//	Type:     schema.TypeMap,
-			//	Optional: true,
-			//},
-			//"metaDescription": {
-			//	Type:     schema.TypeMap,
-			//	Optional: true,
-			//},
-			//"metaKeywords": {
-			//	Type:     schema.TypeMap,
-			//	Optional: true,
-			//},
+			"orderHint": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"externalId": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"metaTitle": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"metaDescription": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"metaKeywords": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
 			//custom
 			"version": {
 				Type:     schema.TypeInt,
@@ -73,12 +73,20 @@ func resourceCategoryCreate(d *schema.ResourceData, m interface{}) error {
 	name := commercetools.LocalizedString(expandStringMap(d.Get("name").(map[string]interface{})))
 	desc := commercetools.LocalizedString(expandStringMap(d.Get("description").(map[string]interface{})))
 	slug := commercetools.LocalizedString(expandStringMap(d.Get("slug").(map[string]interface{})))
+	metaTitle := commercetools.LocalizedString(expandStringMap(d.Get("metaTitle").(map[string]interface{})))
+	metaDescription := commercetools.LocalizedString(expandStringMap(d.Get("metaDescription").(map[string]interface{})))
+	metaKeywords := commercetools.LocalizedString(expandStringMap(d.Get("metaKeywords").(map[string]interface{})))
 
 	draft := &commercetools.CategoryDraft{
 		Key: d.Get("key").(string),
 		Name:        &name,
 		Description: &desc,
 		Slug:        &slug,
+		OrderHint:  d.Get("orderHint").(string),
+		ExternalID:  d.Get("externalId").(string),
+		MetaTitle: &metaTitle,
+		MetaDescription: &metaDescription,
+		MetaKeywords: &metaKeywords,
 	}
 
 	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -132,6 +140,11 @@ func resourceCategoryRead(d *schema.ResourceData, m interface{}) error {
 		d.Set("key", category.Key)
 		d.Set("name", *category.Name)
 		d.Set("description", *category.Description)
+		d.Set("orderHint", category.OrderHint)
+		d.Set("externalId", category.ExternalID)
+		d.Set("metaTitle", *category.MetaTitle)
+		d.Set("metaDescription", *category.MetaDescription)
+		d.Set("metaKeywords", *category.MetaKeywords)
 	}
 	return nil
 }
@@ -173,11 +186,46 @@ func resourceCategoryUpdate(d *schema.ResourceData, m interface{}) error {
 			&commercetools.CategorySetKeyAction{Key: newKey})
 	}
 
+	if d.HasChange("orderHint") {
+		newVal := d.Get("orderHint").(string)
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetKeyAction{Key: newVal})
+	}
+
+	if d.HasChange("externalId") {
+		newVal := d.Get("externalId").(string)
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetKeyAction{Key: newVal})
+	}
+
 	if d.HasChange("description") {
 		newDescription := commercetools.LocalizedString(expandStringMap(d.Get("description").(map[string]interface{})))
 		input.Actions = append(
 			input.Actions,
 			&commercetools.CategorySetDescriptionAction{Description: &newDescription})
+	}
+
+	if d.HasChange("metaTitle") {
+		newMetaTitle := commercetools.LocalizedString(expandStringMap(d.Get("metaTitle").(map[string]interface{})))
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetDescriptionAction{Description: &newMetaTitle})
+	}
+
+	if d.HasChange("metaDescription") {
+		newMetaDescription := commercetools.LocalizedString(expandStringMap(d.Get("metaDescription").(map[string]interface{})))
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetDescriptionAction{Description: &newMetaDescription})
+	}
+
+	if d.HasChange("metaKeywords") {
+		newMetaKeywords := commercetools.LocalizedString(expandStringMap(d.Get("metaKeywords").(map[string]interface{})))
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetDescriptionAction{Description: &newMetaKeywords})
 	}
 
 	log.Printf(
