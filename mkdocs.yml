@@ -1,4 +1,4 @@
-repo_url: https://github.com/labd/terraform-provider-commercetools
+repo_url: https://github.com/AdikaStyle/terraform-provider-commercetools
 site_name: Commercetools Terraform provider
 theme: readthedocs
 markdown_extensions:
