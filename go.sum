@@ -153,6 +153,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/labd/commercetools-go-sdk v0.2.1-0.20201022133731-089f176b654e h1:OShffpM27hUgfubg+WjQgh4s38jviyeH7cUqqT4vcxM=
 github.com/labd/commercetools-go-sdk v0.2.1-0.20201022133731-089f176b654e/go.mod h1:I+KKNALlg6PcSertsVA7E442koO99GT7gldWqwZlUGo=
+github.com/labd/terraform-provider-commercetools v0.25.3 h1:gNMbeL5mH9Kx03XrjBGOX1OGgbiDXmT0jRo6yhuY7CA=
+github.com/labd/terraform-provider-commercetools v0.25.3/go.mod h1:2Zu+iYjnAju5lPpiBe4OSQgUt0feWKm2i8G3Bbvyi2o=
 github.com/mattn/go-colorable v0.0.9 h1:UVL0vNpWh04HeJXV0KLcaT7r06gOH2l4OW6ddYRUIY4=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
 github.com/mattn/go-colorable v0.1.1 h1:G1f5SKeVxmagw/IyvzvtZE4Gybcc4Tr1tf7I8z0XgOg=
