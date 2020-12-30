@@ -1,0 +1,217 @@
+package commercetools
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/labd/commercetools-go-sdk/commercetools"
+)
+
+func resourceCategory() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceCategoryCreate,
+		Read:   resourceCategoryRead,
+		Update: resourceCategoryUpdate,
+		Delete: resourceCategoryDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"name": {
+				Type:     schema.TypeMap,
+				Required: false,
+			},
+			"description": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"slug": {
+				Type:     schema.TypeMap,
+				Optional: false,
+			},
+			//parent
+			//"orderHint": {
+			//	Type:     schema.TypeString,
+			//	Optional: true,
+			//},
+			//"externalId": {
+			//	Type:     schema.TypeString,
+			//	Optional: true,
+			//},
+			//"metaTitle": {
+			//	Type:     schema.TypeMap,
+			//	Optional: true,
+			//},
+			//"metaDescription": {
+			//	Type:     schema.TypeMap,
+			//	Optional: true,
+			//},
+			//"metaKeywords": {
+			//	Type:     schema.TypeMap,
+			//	Optional: true,
+			//},
+			//custom
+			"version": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceCategoryCreate(d *schema.ResourceData, m interface{}) error {
+	client := getClient(m)
+	var category *commercetools.Category
+
+	draft := &commercetools.CategoryDraft{
+		Key:      d.Get("key").(string),
+		Name: &commercetools.LocalizedString{
+			"en": d.Get("name").(string),
+		},
+		Description: &commercetools.LocalizedString{
+			"en": d.Get("description").(string),
+		},
+		Slug: &commercetools.LocalizedString{
+			"en": d.Get("slug").(string),
+		},
+	}
+
+	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		var err error
+
+		category, err = client.CategoryCreate(context.Background(), draft)
+		if err != nil {
+			return handleCommercetoolsError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if category == nil {
+		log.Fatal("No  category created?")
+	}
+
+	d.SetId(category.ID)
+	d.Set("version", category.Version)
+
+	return resourceCategoryRead(d, m)
+}
+
+func resourceCategoryRead(d *schema.ResourceData, m interface{}) error {
+	log.Printf("[DEBUG] Reading category from commercetools, with category id: %s", d.Id())
+	client := getClient(m)
+
+	category, err := client.CategoryGetWithID(context.Background(), d.Id())
+
+	if err != nil {
+		if ctErr, ok := err.(commercetools.ErrorResponse); ok {
+			if ctErr.StatusCode == 404 {
+				d.SetId("")
+				return nil
+			}
+		}
+		return err
+	}
+
+	if category == nil {
+		log.Print("[DEBUG] No category found")
+		d.SetId("")
+	} else {
+		log.Print("[DEBUG] Found following category:")
+		log.Print(stringFormatObject(category))
+
+		d.Set("version", category.Version)
+		d.Set("key", category.Key)
+		d.Set("name", category.Name)
+		d.Set("description", category.Description)
+	}
+	return nil
+}
+
+func resourceCategoryUpdate(d *schema.ResourceData, m interface{}) error {
+	ctMutexKV.Lock(d.Id())
+	defer ctMutexKV.Unlock(d.Id())
+
+	client := getClient(m)
+	category, err := client.CategoryGetWithID(context.Background(), d.Id())
+	if err != nil {
+		return err
+	}
+
+	input := &commercetools.CategoryUpdateWithIDInput{
+		ID:      d.Id(),
+		Version: category.Version,
+		Actions: []commercetools.CategoryUpdateAction{},
+	}
+
+	if d.HasChange("name") {
+		newName := d.Get("name").(commercetools.LocalizedString)
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategoryChangeNameAction{Name: &newName})
+	}
+
+	if d.HasChange("slug") {
+		newSlug := d.Get("slug").(commercetools.LocalizedString)
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategoryChangeSlugAction{Slug: &newSlug})
+	}
+
+	if d.HasChange("key") {
+		newKey := d.Get("key").(string)
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetKeyAction{Key: newKey})
+	}
+
+	if d.HasChange("description") {
+		newDescription := d.Get("description").(commercetools.LocalizedString)
+		input.Actions = append(
+			input.Actions,
+			&commercetools.CategorySetDescriptionAction{Description: &newDescription})
+	}
+
+	log.Printf(
+		"[DEBUG] Will perform update operation with the following actions:\n%s",
+		stringFormatActions(input.Actions))
+
+	_, err = client.CategoryUpdateWithID(context.Background(), input)
+	if err != nil {
+		if ctErr, ok := err.(commercetools.ErrorResponse); ok {
+			log.Printf("[DEBUG] %v: %v", ctErr, stringFormatErrorExtras(ctErr))
+		}
+		return err
+	}
+
+	return resourceCategoryRead(d, m)
+}
+
+func resourceCategoryDelete(d *schema.ResourceData, m interface{}) error {
+	client := getClient(m)
+
+	// Lock to prevent concurrent updates due to Version number conflicts
+	ctMutexKV.Lock(d.Id())
+	defer ctMutexKV.Unlock(d.Id())
+
+	category, err := client.CategoryGetWithID(context.Background(), d.Id())
+	if err != nil {
+		return err
+	}
+	_, err = client.CategoryDeleteWithID(context.Background(), d.Id(), category.Version)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

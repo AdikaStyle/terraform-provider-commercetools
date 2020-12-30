@@ -8,7 +8,7 @@ test:
 	go test -v ./...
 
 update-sdk:
-	GO111MODULE=on go get github.com/labd/commercetools-go-sdk
+	GO111MODULE=on go get github.com/AdikaStyle/commercetools-go-sdk
 	GO111MODULE=on go mod vendor
 	GO111MODULE=on go mod tidy
 
