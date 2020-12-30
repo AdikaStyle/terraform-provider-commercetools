@@ -70,17 +70,15 @@ func resourceCategoryCreate(d *schema.ResourceData, m interface{}) error {
 	client := getClient(m)
 	var category *commercetools.Category
 
+	name := commercetools.LocalizedString(expandStringMap(d.Get("name").(map[string]interface{})))
+	desc := commercetools.LocalizedString(expandStringMap(d.Get("description").(map[string]interface{})))
+	slug := commercetools.LocalizedString(expandStringMap(d.Get("slug").(map[string]interface{})))
+
 	draft := &commercetools.CategoryDraft{
-		Key:      d.Get("key").(string),
-		Name: &commercetools.LocalizedString{
-			"en": d.Get("name").(string),
-		},
-		Description: &commercetools.LocalizedString{
-			"en": d.Get("description").(string),
-		},
-		Slug: &commercetools.LocalizedString{
-			"en": d.Get("slug").(string),
-		},
+		Key: d.Get("key").(string),
+		Name:        &name,
+		Description: &desc,
+		Slug:        &slug,
 	}
 
 	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -132,8 +130,8 @@ func resourceCategoryRead(d *schema.ResourceData, m interface{}) error {
 
 		d.Set("version", category.Version)
 		d.Set("key", category.Key)
-		d.Set("name", category.Name)
-		d.Set("description", category.Description)
+		d.Set("name", *category.Name)
+		d.Set("description", *category.Description)
 	}
 	return nil
 }
@@ -155,14 +153,14 @@ func resourceCategoryUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if d.HasChange("name") {
-		newName := d.Get("name").(commercetools.LocalizedString)
+		newName := commercetools.LocalizedString(expandStringMap(d.Get("name").(map[string]interface{})))
 		input.Actions = append(
 			input.Actions,
 			&commercetools.CategoryChangeNameAction{Name: &newName})
 	}
 
 	if d.HasChange("slug") {
-		newSlug := d.Get("slug").(commercetools.LocalizedString)
+		newSlug := commercetools.LocalizedString(expandStringMap(d.Get("slug").(map[string]interface{})))
 		input.Actions = append(
 			input.Actions,
 			&commercetools.CategoryChangeSlugAction{Slug: &newSlug})
@@ -176,7 +174,7 @@ func resourceCategoryUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if d.HasChange("description") {
-		newDescription := d.Get("description").(commercetools.LocalizedString)
+		newDescription := commercetools.LocalizedString(expandStringMap(d.Get("description").(map[string]interface{})))
 		input.Actions = append(
 			input.Actions,
 			&commercetools.CategorySetDescriptionAction{Description: &newDescription})
