@@ -26,7 +26,7 @@ func resourceCategory() *schema.Resource {
 			},
 			"name": {
 				Type:     schema.TypeMap,
-				Required: false,
+				Required: true,
 			},
 			"description": {
 				Type:     schema.TypeMap,
@@ -34,7 +34,7 @@ func resourceCategory() *schema.Resource {
 			},
 			"slug": {
 				Type:     schema.TypeMap,
-				Optional: false,
+				Required: true,
 			},
 			//parent
 			//"orderHint": {
