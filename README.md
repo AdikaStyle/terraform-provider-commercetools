@@ -1,22 +1,10 @@
 # commercetools Terraform Provider
 
-[![Test status](https://github.com/labd/terraform-provider-commercetools/workflows/Run%20Tests/badge.svg)](https://github.com/labd/terraform-provider-commercetools/actions?query=workflow%3A%22Run+Tests%22)
-[![codecov](https://codecov.io/gh/LabD/terraform-provider-commercetools/branch/master/graph/badge.svg)](https://codecov.io/gh/LabD/terraform-provider-commercetools)
-[![Go Report Card](https://goreportcard.com/badge/github.com/labd/terraform-provider-commercetools)](https://goreportcard.com/report/github.com/labd/terraform-provider-commercetools)
-[![Documentation Status](https://readthedocs.org/projects/commercetools-terraform-provider/badge/?version=latest)](https://commercetools-terraform-provider.readthedocs.io/en/latest/?badge=latest)
-
-# Status
-
 This is the Terraform provider for commercetools. It allows you to configure
 your [commercetools](https://commercetools.com/) project with
 infrastructure-as-code principles. The project is in development and it might
 not support the complete commercetools API yet, but it can be considered
 'production' ready for the resource it does support.
-
-# Commercial support
-
-Need support implementing this terraform module in your organization? We are
-able to offer support. Please contact us at opensource@labdigital.nl
 
 # Installation
 
@@ -29,7 +17,7 @@ the terraform registry. Add the following to your terraform project
 terraform {
   required_providers {
     commercetools = {
-      source = "labd/commercetools"
+      source = "AdikaStyle/commercetools"
     }
   }
 }
@@ -38,7 +26,7 @@ terraform {
 ## Binaries
 
 Packages of the releases are available at
-https://github.com/labd/terraform-provider-commercetools/releases See the
+https://github.com/AdikaStyle/terraform-provider-commercetools/releases See the
 [terraform documentation](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins)
 for more information about installing third-party providers.
 
@@ -51,17 +39,17 @@ and check out the [examples](https://commercetools-terraform-provider.readthedoc
 
 ## Building the provider
 
-Clone repository to: `$GOPATH/src/github.com/labd/terraform-provider-commercetools`
+Clone repository to: `$GOPATH/src/github.com/AdikaStyle/terraform-provider-commercetools`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/labd; cd $GOPATH/src/github.com/labd
-$ git clone git@github.com:labd/terraform-provider-commercetools
+$ mkdir -p $GOPATH/src/github.com/AdikaStyle; cd $GOPATH/src/github.com/AdikaStyle
+$ git clone git@github.com:AdikaStyle/terraform-provider-commercetools
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/labd/terraform-provider-commercetools
+$ cd $GOPATH/src/github.com/AdikaStyle/terraform-provider-commercetools
 $ make build
 ```
 
@@ -137,9 +125,3 @@ $ source local/testenv.sh
 $ make testacc
 ```
 
-## Authors
-
-This project is developed by [Lab Digital](https://www.labdigital.nl). We
-welcome additional contributors. Please see our
-[GitHub repository](https://github.com/labd/terraform-provider-commercetools)
-for more information.
