@@ -1,5 +1,23 @@
-unreleased (?)
+v0.27.0 (2021-03-01)
 ====================
+ - Resource Project: Add new `carts` field to documentation
+ - Previous feature addition should have been minor update so making it minor now
+
+v0.26.2 (2021-03-01)
+====================
+ - Resource Project: Add `carts` field with countryTaxRateFallBackEnabled setting 
+ - Resource Project: Fix updating of `messages` field to explicitly set `false` when deleted or set to false in terraform
+instead of relying on commercetools default settings for project in these scenarios 
+
+v0.26.1 (2021-01-21)
+====================
+ - Api Extension Resource: Fixed typo in `trigger` field name that caused updates to actions in triggers to fail
+
+v0.26.0 (2021-01-12)
+====================
+ - Add Customer Group resource (#141)
+ - Type Resource: Allow updating the label of an existing Enum value
+ - Type Resource: Add support to update a set of enum in a custom type
  - Fix ProductType and DiscountCode tests with real commercetools environment
 
 v0.25.3 (2020-12-17)
