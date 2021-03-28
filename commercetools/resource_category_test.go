@@ -1,6 +1,7 @@
 package commercetools
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"testing"
 )
@@ -45,6 +46,26 @@ func testCategoryUpdate() string {
 		}`
 }
 
+func testCreateChildCategory() string {
+	return fmt.Sprintf(`%s 
+
+resource "commercetools_category" "bracelets" {
+			name = {
+				en = "bracelets"
+			}
+			key = "bracelets123"
+			description = {
+				en = "nice bracelets"
+			}
+			slug = {
+				en = "foo_bracelets"
+			}
+			order_hint = "0.008"
+			parent_key = "bananas123"
+		}`,testCategoryUpdate())
+}
+
+
 
 func TestCategoryCreate_basic(t *testing.T) {
 
@@ -80,7 +101,77 @@ func TestCategoryCreate_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("commercetools_category.accessoriesz", "meta_description.en", "foo"),
 					resource.TestCheckResourceAttr("commercetools_category.accessoriesz", "meta_keywords.en", "bar"),
 				),
+			},{
+				Config: testCreateChildCategory(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("commercetools_category.bracelets", "name.en", "bracelets"),
+					resource.TestCheckResourceAttr("commercetools_category.bracelets", "key", "bracelets123"),
+					resource.TestCheckResourceAttr("commercetools_category.bracelets", "description.en", "nice bracelets"),
+					resource.TestCheckResourceAttr("commercetools_category.bracelets", "slug.en", "foo_bracelets"),
+					resource.TestCheckResourceAttr("commercetools_category.bracelets", "parent_key", "bananas123"),
+
+				),
+			},
+			{
+				Config: testChangeParents(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("commercetools_category.bracelets", "parent_key", "new_parent"),
+				),
 			},
 		},
 	})
+}
+
+
+func testChangeParents() string {
+	return `
+
+resource "commercetools_category" "accessoriesz" {
+			name = {
+				en = "accessories"
+			}
+			key = "bananas123"
+			description = {
+				en = "vi very viniversum vivus vicy"
+			}
+			slug = {
+				en = "bananas_accessories"
+			}
+			order_hint = "0.002"
+			external_id = "idclip"
+			meta_title = { en = "baz" }
+			meta_description = { en = "foo" }
+			meta_keywords = { en = "bar" }
+}
+
+
+resource "commercetools_category" "accessoriesxx" {
+			name = {
+				en = "accessoriesxx"
+			}
+			key = "new_parent"
+			description = {
+				en = "fooo"
+			}
+			slug = {
+				en = "bar_accessories"
+			}
+			order_hint = "0.002"
+}
+
+resource "commercetools_category" "bracelets" {
+			name = {
+				en = "bracelets"
+			}
+			key = "bracelets123"
+			description = {
+				en = "nice bracelets"
+			}
+			slug = {
+				en = "foo_bracelets"
+			}
+			order_hint = "0.008"
+			parent_key = "new_parent"
+}
+`
 }
