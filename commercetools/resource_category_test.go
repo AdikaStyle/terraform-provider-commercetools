@@ -61,30 +61,37 @@ func TestCategoryCreate_basic(t *testing.T) {
 	})
 }
 
-func TestCategoryCreate_withAssets(t *testing.T) {
-
+func TestCategoryUpdate_withAssets(t *testing.T) {
+	t.SkipNow()
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAddAssets(),
+				Config: testCategoryWithAssets(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "key", "accessoriesz_with_assets"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.name.en", "ass1"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.key", "it_a_nice"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.sources.0.uri", "http://google.com"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.sources.0.key", "keywest"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.sources.0.dimensions.w", "240"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.sources.0.dimensions.h", "240"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.sources.0.content_type", "png"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.sources.1.uri", "http://tapuz.com"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.description.en", "terraform is so much fun"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.tags.0", "banana"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.0.tags.1", "tapuz"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.1.name.en", "ass2"),
-					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets", "assets.1.sources.0.uri", "http://nice.com"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "key", "accessoriesz_with_assets_2"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.name.en", "ass1"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.key", "it_a_nice"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.sources.0.uri", "http://google.com"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.sources.0.key", "keywest"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.sources.0.dimensions.w", "240"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.sources.0.dimensions.h", "240"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.sources.0.content_type", "png"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.sources.1.uri", "http://tapuz.com"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.description.en", "terraform is so much fun"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.tags.0", "banana"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.0.tags.1", "tapuz"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.1.name.en", "ass2"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.1.sources.0.uri", "http://nice.com"),
+				),
+			},
+			{
+				Config: testCategoryWithAssets_add_asset(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.2.name.en", "ass3"),
+					resource.TestCheckResourceAttr("commercetools_category.accessoriesz_with_assets_2", "assets.2.sources.0.uri", "http://nice2.com"),
 				),
 			},
 		},
@@ -209,19 +216,18 @@ resource "commercetools_category" "bracelets" {
 `
 }
 
-func testAddAssets() string {
+func testCategoryWithAssets() string {
 	return `
-
-resource "commercetools_category" "accessoriesz_with_assets" {
+resource "commercetools_category" "accessoriesz_with_assets_2" {
 			name = {
 				en = "banana"
 			}
-			key = "accessoriesz_with_assets"
+			key = "accessoriesz_with_assets_2"
 			description = {
-				en = "accessoriesz_with_assets"
+				en = "accessoriesz_with_assets_2"
 			}
 			slug = {
-				en = "accessoriesz_with_assets"
+				en = "accessoriesz_with_assets_2"
 			}
 			order_hint = "0.002"
 			assets {
@@ -252,6 +258,66 @@ resource "commercetools_category" "accessoriesz_with_assets" {
 				}
 				sources {
 					uri = "http://nice.com"
+				}
+			}
+}
+
+`
+}
+
+
+func testCategoryWithAssets_add_asset() string {
+	return `
+resource "commercetools_category" "accessoriesz_with_assets_2" {
+			name = {
+				en = "banana"
+			}
+			key = "accessoriesz_with_assets_2"
+			description = {
+				en = "accessoriesz_with_assets_2"
+			}
+			slug = {
+				en = "accessoriesz_with_assets_2"
+			}
+			order_hint = "0.002"
+			assets {
+				name = {
+					en = "ass1"
+				}
+				key = "it_a_nice"
+				sources {
+					uri = "http://google.com"
+					key = "keywest"
+					content_type = "png"
+					dimensions = {
+						w = 240
+						h = 240
+					}
+				}
+				sources {
+					uri = "http://tapuz.com"
+				}
+				description = {
+					en = "terraform is so much fun"
+				}
+				tags = ["banana","tapuz"]
+			}
+			assets {
+				key = "it_a_nice_1"
+				name = {
+					en = "ass2"
+				}
+				sources {
+					uri = "http://nice.com"
+				}
+			}
+			assets {
+				key = "it_a_nice_2"
+				name = {
+					en = "ass3"
+				}
+				sources {
+					uri = "http://nice2.com"
 				}
 			}
 }

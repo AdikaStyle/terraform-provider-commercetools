@@ -195,10 +195,14 @@ func getAssets(d *schema.ResourceData) *[]commercetools.AssetDraft {
 	}
 	var assets []commercetools.AssetDraft
 	for _, raw := range input {
+		i := raw.(map[string]interface{})
+		description := toLocalizedString(raw,"description")
 		sources := getAssetSources(raw)
 		name := toLocalizedString(raw, "name")
 		assetDraft := commercetools.AssetDraft{
 			Name:    &name,
+			Description: &description,
+			Key: i["key"].(string),
 			Sources: sources,
 		}
 		assets = append(assets, assetDraft)
@@ -366,6 +370,35 @@ func resourceCategoryUpdate(d *schema.ResourceData, m interface{}) error {
 			&commercetools.CategoryChangeParentAction{Parent: &commercetools.CategoryResourceIdentifier{
 				Key: newVal	}})
 	}
+
+	if d.HasChange("assets") {
+		assets := getAssets(d)
+		for _, asset := range *assets {
+			input.Actions = append(
+				input.Actions,
+				&commercetools.CategoryChangeAssetNameAction{Name: asset.Name, AssetKey: asset.Key},
+				&commercetools.CategorySetAssetDescriptionAction{Description: asset.Description, AssetKey: asset.Key},
+				&commercetools.CategorySetAssetSourcesAction{Sources: asset.Sources, AssetKey: asset.Key},
+			)
+			if len(asset.Tags) > 0 {
+				input.Actions = append(
+					input.Actions,
+					&commercetools.CategorySetAssetTagsAction{Tags: asset.Tags, AssetKey: asset.Key},
+				)
+			}
+		}
+	}
+
+	//todo:
+	// add asset
+	// remove asset
+	// set asset key
+	// change asset order
+	// change asset description
+	// set asset tags
+	// set asset sources
+	// set assets custom types
+	// set assets custom field
 
 	log.Printf(
 		"[DEBUG] Will perform update operation with the following actions:\n%s",
